@@ -40,7 +40,7 @@ def parse_command(command_string):
 
 #command definitions: environment commands
 
-#show
+#show vocabulary definition
 def cmd_show(parsed_command):
     if len(parsed_command) == 1:
         print(actions[parsed_command[0]]['objs'])
@@ -50,6 +50,7 @@ def cmd_show(parsed_command):
     else:
         print(parsed_command)  
 
+#modify vocabulary definition
 def cmd_set(parsed_command):
     if len(parsed_command) > 1:
         if valid_object(parsed_command[1]):
@@ -58,7 +59,32 @@ def cmd_set(parsed_command):
             print("please enter a valid object.")
     else:
         print(actions[parsed_command[0]]["id"])
+
+#clear runtime variable
+def cmd_clear(parsed_command):
+    if len(parsed_command) == 1:
+        print("Please choose a definition to clear.")
+    elif len(parsed_command) == 2:
+        are_you_sure = verify_choice()
+        if are_you_sure == True:
+            vocabulary[parsed_command[1]] = ""
+        else:
+            pass
+                
+            
         
+#verify user choice                
+def verify_choice():
+    choice = input("Are you sure? y/n \n")
+    if choice == "y":
+        return True
+    elif choice == "n":
+        return False
+    else:
+        print("Please enter y or n.\n")
+        verify_choice()       
+
+#request commands        
 #dynamically builds request based on request state        
 def request_processor(request_state):
     if request_state[0] == 0:
@@ -114,7 +140,8 @@ def cmd_run(parsed_command):
 actions = {
     "show" : {"id" : 1, "objs" : ["url", "username", "password"], "call alias" : cmd_show},
     "set" : {"id" : 2, "call alias" : cmd_set},
-    "run" : {"id" : 3, "call alias" : cmd_run}
+    "run" : {"id" : 3, "call alias" : cmd_run},
+    "clear" : {"id" : 4, "call alias" :  cmd_clear}
 }
 
 #user can modify these variables during runtime
