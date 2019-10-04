@@ -2,14 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 
 
-
-#tags = {
-#    "aa" : "action",
-#    "obj" : "data object: name and value",
-#    "val" : "object value",
-#    "nam" : "object name"
-#} 
-
 #functions for validating commands:
 #validates a word as a proper command
 def valid_action(command_word):
@@ -25,7 +17,7 @@ def valid_object(command_word):
     else:
         return False
 
-#validates command syntax
+#validates command syntax (strict verb object)
 def valid_syntax(parsed_command):
     if len(parsed_command) == 1:
         if valid_action(parsed_command[0]):
@@ -67,25 +59,56 @@ def cmd_set(parsed_command):
     else:
         print(actions[parsed_command[0]]["id"])
         
-def request_call():
-    url = vocabulary["url"]
-    params = 0
-    req = requests.get(url)   
-    return req
+#dynamically builds request based on request state        
+def request_processor(request_state):
+    if request_state[0] == 0:
+        print("Please set a url.")
+    elif request_state == [1,0]:
+        url = vocabulary["url"]
+        raw_response = requests.get(url)
+        return raw_response
+    elif request_state == [1,1]:
+        username = vocabulary["username"]
+        password = vocabulary["password"]
+        url = vocabulary["url"]
+        raw_response = requests.get(url, auth=(username, password))
+        return raw_response        
+        
+    
+#request validator returns a state code to help the processor determine what to use in the request.
+def request_state_generator():
+    #url and auth bits
+    request_state = [0,0]
+    #flips url bit of vocabulary[request][state]
+    if vocabulary["url"] == "":
+        vocabulary["request"]["state"][0] = 0
+        request_state[0] = 0
+    else:
+        vocabulary["request"]["state"][0] = 1
+        request_state[0] = 1
+    #flips auth bit for request_processor
+    if  vocabulary["username"] == "" and vocabulary["password"] == "":
+        vocabulary["request"]["state"][1] = 0
+        request_state[1] = 0
+    else:
+        vocabulary["request"]["state"][1] = 1
+        request_state[1] = 1
+    #TODO: flip paramters and ssl bit, as needed
+    return request_state
+            
+#returns parsed html object
+def response_html_parser(raw_response):
+    parsed_html = BeautifulSoup(raw_response.content, "lxml")
+    return parsed_html 
 
-def request_format(req):
-    parsed_request = BeautifulSoup(req.content, "lxml")
-    return parsed_request 
-
+#runs request builder and calls the request
 def cmd_run(parsed_command):
-    req = request_call()
-    response = request_format(req)
-    print(response)
-    return(response)
+    http_response = request_processor(request_state_generator())
+    html_response = response_html_parser(http_response)
+    print(html_response)
+    return(html_response)        
     
     
-    
-     
 
 #command list
 actions = {
@@ -99,8 +122,12 @@ vocabulary = {
     "url" : "http://natas0.natas.labs.overthewire.org/",
     "username" : "",
     "password" : "",
-    "response" : ""
+    "response" : "",
+    # state = [auth, paramaters, ssl] boolean
+    "request" : {"state" : [0,0,0,0]}
 }
+
+
 
 
 #function for calling commands
@@ -114,7 +141,6 @@ def call_command(command_string):
 
 
 #main loop to continuously accept input.
-#TODO: implement an interface to validate and run commands and reply back with results.
 
 
 def main():
